@@ -26,7 +26,7 @@ class COCOGenerator(CocoDetection):
     'microwave', 'oven', 'toaster', 'sink', 'refrigerator',
     'book', 'clock', 'vase', 'scissors', 'teddy bear',
     'hair drier', 'toothbrush')
-    def __init__(self,imgs_path,anno_path,resize_size=[800,1333]):
+    def __init__(self,imgs_path,anno_path,resize_size=[300,300]):
         super().__init__(imgs_path,anno_path)
 
         print("INFO====>check annos, filtering invalid data......")
@@ -180,12 +180,15 @@ def evaluate_coco(generator, model, threshold=0.05):
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
+    
     return coco_eval.stats
 
 if __name__ == "__main__":
-    generator=COCOGenerator("/Users/coco2017/val2017","/Users/coco2017/instances_val2017.json")
+    resize_ = [600,600]
+    generator=COCOGenerator("/HDD/jaeha/dataset/COCO/2017/val2017",
+                          '/HDD/jaeha/dataset/COCO/2017/annotations/changed_instances_val2017.json',resize_size=resize_)
     model=FCOSDetector(mode="inference")
     model = torch.nn.DataParallel(model)
     model = model.cuda().eval()
-    model.load_state_dict(torch.load("./checkpoint/coco_37.2.pth",map_location=torch.device('cpu')))
-    evaluate_coco(generator,model)
+    model.load_state_dict(torch.load("./checkpoint_dilation_300/model_48.pth",map_location=torch.device('cuda:0')),strict=False)
+    tmp = evaluate_coco(generator,model)

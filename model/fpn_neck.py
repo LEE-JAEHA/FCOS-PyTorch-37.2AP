@@ -19,11 +19,28 @@ class FPN(nn.Module):
         self.conv_out7 = nn.Conv2d(features, features, kernel_size=3, padding=1, stride=2)
         self.use_p5=use_p5
         self.apply(self.init_conv_kaiming)
+
+        self.deconv =nn.Sequential(
+            nn.ConvTranspose2d(features, features, 4, stride=2, padding=1, bias=True),
+            nn.BatchNorm2d(features),
+            nn.ReLU(True),
+        )
+        self.conv_2x = nn.Sequential(
+            nn.Conv2d(features, features*4, kernel_size=1, stride=1,bias=True),
+            nn.PixelShuffle(2),
+            nn.BatchNorm2d(features)
+        )
+
+
+
     def upsamplelike(self,inputs):
         src,target=inputs
         return F.interpolate(src, size=(target.shape[2], target.shape[3]),
                     mode='nearest')
-    
+    def upsamplelike_deconv(self,inputs):
+        src, target = inputs
+        return self.deconv(src)
+
     def init_conv_kaiming(self,module):
         if isinstance(module, nn.Conv2d):
             nn.init.kaiming_uniform_(module.weight, a=1)
@@ -36,9 +53,13 @@ class FPN(nn.Module):
         P5 = self.prj_5(C5)
         P4 = self.prj_4(C4)
         P3 = self.prj_3(C3)
-        
-        P4 = P4 + self.upsamplelike([P5,C4])
-        P3 = P3 + self.upsamplelike([P4,C3])
+
+        # P9 = self.upsamplelike_deconv([P5, C4])
+        P4 = P4 + self.conv_2x(P5)
+        P3 = P3 + self.conv_2x(P4)
+
+        # P4 = P4 + self.upsamplelike([P5,C4])
+        # P3 = P3 + self.upsamplelike([P4,C3])
 
         P3 = self.conv_3(P3)
         P4 = self.conv_4(P4)
