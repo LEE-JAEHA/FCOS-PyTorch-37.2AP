@@ -398,8 +398,8 @@ class ResNet(nn.Module):
             return x
         else:
             # return (out3, out4, out5)
-            return (out3_small, out4, out5)
-            # return (out3, out4, out5,out3_small)
+            # return (out3, out4, out5)
+            return (out3, out4, out5,out3_small) #added
 
     def freeze_bn(self):
         for layer in self.modules():
